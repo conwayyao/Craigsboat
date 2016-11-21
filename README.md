@@ -10,10 +10,10 @@ Jesse and Conway's Craigsboat Python Exercise
   3. Predict prices based on a boat's characteristics
 
 # Packages and Concepts to Use and Learn
-- Requests
-- BeautifulSoup4
-- Regular Expressions (Regex)
-- Pandas
+- [Requests](http://docs.python-requests.org/en/master/)
+- [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- [Regular Expressions (Regex)](https://docs.python.org/3/howto/regex.html)
+- [Pandas](http://pandas.pydata.org/)
 
 # Data Format
 - For each boat listing, get a single dictionary with attribute names as the keys, and values as values. E.g. {'id':'55341', 'price':'$5500'...}
