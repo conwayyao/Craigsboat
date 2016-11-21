@@ -15,3 +15,6 @@ Jesse and Conway's Craigsboat Python Exercise
 - Regular Expressions (Regex)
 - Pandas
 
+# Data Format
+- For each boat listing, get a single dictionary with attribute names as the keys, and values as values. E.g. {'id':'55341', 'price':'$5500'...}
+- Then get a list of all boat listing dictionaries: [{'id'...}, {'id'...}, {'id'...}]
