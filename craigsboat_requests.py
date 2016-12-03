@@ -20,7 +20,7 @@ results_endpoints = ['', '?s=100', '?s=200', '?s=300', '?s=400', '?s=500']
 
 ## Defines a function which scrapes all listings pages
 def scrape_listings(page):
-    results_base= 'https://washingtondc.craigslist.org/search/boo'
+    results_base= 'https://poconos.craigslist.org/search/boo'
     r = requests.get(results_base + page)
     soup = BeautifulSoup(r.text, "lxml")
     
@@ -37,7 +37,7 @@ def get_listings_info(listing):
 
     # Extract listing_url to pass to get_boat_info function
     listing_link = listing.find(class_='result-title hdrlnk').attrs['href']
-    listing_base = 'https://washingtondc.craigslist.org'
+    listing_base = 'https://poconos.craigslist.org'
     listing_url = listing_base + listing_link
 
     # Pass listing_url to get_boat_info function, and get back a dictionary
@@ -57,8 +57,8 @@ def get_listings_info(listing):
     # Return dictionary into results list
     results.append(boat_info)
     
-    # Sleep 'for' loop for 0.1 seconds (10 requests/sec)
-    time.sleep(0.1)
+    # Sleep 'for' loop for 0.75 seconds
+    time.sleep(0.75)
 
     
 ## Defines a function to extract info from a single listing page
@@ -86,6 +86,13 @@ def get_boat_info(listing_url):
     # Add description string into dictionary
     boat_attrs['description'] = description
 
+    # Extract coordinates of posting
+    try:
+        maplink = bsoup.find(target='_blank').attrs['href']
+        boat_attrs['map_URL'] = maplink
+    except:
+        pass
+
     # Return the dictionary that contains the listing's information
     return(boat_attrs)
     
@@ -100,6 +107,6 @@ for endpoint in results_endpoints:
 
 ## Convert results to pandas DataFrame and export as CSV
 resultsDF = pd.DataFrame(results)
-resultsDF.to_csv('craigsboat_results.csv', encoding='utf-8')
+resultsDF.to_csv('craigsboat_results_poconos.csv', encoding='utf-8')
 
     
