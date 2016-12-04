@@ -1,0 +1,30 @@
+<head>
+<style type="text/css">
+body{
+  margin:0px
+    background:#000;
+}
+
+.header{
+  font-size: 2.5em; 
+    font-family: "Arial", Arial, serif;
+  height:60px;
+  background:#80deea;
+  border:5px solid #ffecb3;
+  margin: 0px auto;
+}
+
+.footer{
+  text-decoration: none;
+  font-color: black;
+  font-size: 2.5em;
+  font-family: "Arial", Arial, serif;
+  height:140px;
+  background:#80deea;
+  border:5px solid #ffecb3;
+  margin: 0px auto;
+}
+
+.body{
+  background:#ffecb3;
+}
