@@ -1,6 +1,8 @@
 # Craigsboat
 Jesse and Conway's Craigsboat Python Exercise
 
+# [GitHub Page Link](https://conwayyao.github.io/Craigsboat/)
+
 # Objectives
 1. Learn Python and its useful packages!
 1. Learn how to contribute to code projects with Git and GitHub
