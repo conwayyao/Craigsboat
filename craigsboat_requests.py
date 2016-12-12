@@ -10,7 +10,11 @@ from bs4 import BeautifulSoup
 import re  
 import time
 import pandas as pd
+import os
 
+# Change into CSV folder
+os.listdir('./')
+os.chdir('csv')
 
 ## Scrapes Craiglist for all localities (e.g. 'washingtondc')
 cl_sites_url = 'https://www.craigslist.org/about/sites'
@@ -169,7 +173,7 @@ def scrape_locality(state, locality_dict):
 ## Run the program on a set of states!
 
 # Hard-code the states to extract
-states_to_run = ['Territories']
+states_to_run = ['Washington', 'Virginia', 'Florida', 'Michigan', 'RhodeIsland', 'Maine']
 for state in states_to_run:
     scrape_locality(state, sites[state])
 
