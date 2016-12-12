@@ -20,3 +20,15 @@ Jesse and Conway's Craigsboat Python Exercise
 # Data Format
 - For each boat listing, get a single dictionary with attribute names as the keys, and values as values. E.g. {'id':'55341', 'price':'$5500'...}
 - Then get a list of all boat listing dictionaries: [{'id'...}, {'id'...}, {'id'...}]
+
+#Next Steps
+Conway:
+- figure out a way to automatically generate google map URLs with CSV files
+- host webscraper on AWS
+- schedule AWS run
+
+Jesse:
+- to post in Github or HTML, this is a learning exercise plz don't sue us Craigslist like you did to PadMapper
+- implement Google Analytics
+- Javascript --> select: Country, Locality according to Github CSV Files to spit out
+- refine CSS a bit
