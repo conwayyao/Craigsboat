@@ -11,6 +11,7 @@ import re
 import time
 import pandas as pd
 
+
 ## Scrapes Craiglist for all localities (e.g. 'washingtondc')
 cl_sites_url = 'https://www.craigslist.org/about/sites'
 k = requests.get(cl_sites_url)
@@ -23,14 +24,13 @@ for raw_state in states:
     state = re.sub('\W', '', raw_state.text)
     state_list.append(state)
 
-# Find the lists of localities under each state/country and store into list
+# Find the lists of localities under each state/country
 localities = ksoup.find_all('ul')
 # Delete the Craigslist footer
 del(localities[140])
 
-locality_dicts_list = []
-
 # Create a dictionary where the keys are the locality names and the values are the URLs, and append to locality_dicts_list
+locality_dicts_list = []
 for ul in localities:
     local = {}
     for region in ul.find_all('a'):
@@ -40,6 +40,7 @@ for ul in localities:
 # Combine state_list and locality_list together into one dictionary-of-dictionaries
 sites = {}
 sites = dict(zip(state_list, locality_dicts_list))
+
 
 ## Defines a function which scrapes all listings pages
 def scrape_listings(page, locality_URL):
@@ -51,36 +52,50 @@ def scrape_listings(page, locality_URL):
     links = soup.find_all('p', class_='result-info')
     
     # Call get_listings_info to extract each listing's info
+    results = []
     for listing in links:
-        get_listings_info(listing, locality_URL)
+        results.append(get_listings_info(listing, locality_URL))
+    
+    # Return results, filtering out NoneTypes
+    return(filter(None, results))
+        
 
 ## Defines a function which extracts information from each listing on the listings page
 def get_listings_info(listing, locality_URL):
 
     # Extract listing_url to pass to get_boat_info function
     listing_link = listing.find(class_='result-title hdrlnk').attrs['href']
-    listing_base = 'https:' + locality_URL
-    listing_url = listing_base + listing_link
 
-    # Pass listing_url to get_boat_info function, and get back a dictionary
-    boat_info = get_boat_info(listing_url)
-
-    # Populate dictionary with further information
-    boat_info['title'] = listing.find(class_='result-title hdrlnk').text
-    boat_info['id'] = listing.find(class_='result-title hdrlnk').attrs['data-id']
-    boat_info['url'] = listing_url
-    boat_info['date'] = listing.find(class_='result-date').attrs['datetime']
-    try:
-        boat_info['price'] = listing.find(class_ ='result-price').text
-        boat_info['region'] = listing.find(class_='result-hood').text
-    except:
-        pass
+    # Test if the listing is of the correct locality-- a link with an incorrect locality will start with '/virginislands' instead of simply '/boa'
+    if listing_link.startswith('/boa'):
+        locality_URL = locality_URL[0:-1] # Strips the extra '/' at end of locality_URL
+        listing_base = 'https:' + locality_URL
+        listing_url = listing_base + listing_link
     
-    # Return dictionary into results list
-    results.append(boat_info)
+        # Pass listing_url to get_boat_info function, and get back a dictionary
+        boat_info = get_boat_info(listing_url)
     
-    # Sleep 'for' loop for 0.8 seconds to prevent IP blocking
-    time.sleep(0.8)
+        # Populate dictionary with further information
+        boat_info['title'] = listing.find(class_='result-title hdrlnk').text
+        boat_info['id'] = listing.find(class_='result-title hdrlnk').attrs['data-id']
+        boat_info['url'] = listing_url
+        boat_info['date'] = listing.find(class_='result-date').attrs['datetime']
+        try:
+            boat_info['price'] = listing.find(class_ ='result-price').text
+            boat_info['region'] = listing.find(class_='result-hood').text
+        except:
+            pass
+        
+        # Return dictionary of info about a boat
+        return(boat_info)
+    
+        # Sleep 'for' loop for 0.8 seconds to prevent IP blocking
+        time.sleep(0.8)
+        
+    # If the link is of the wrong locality, simply return NoneType
+    else:
+        return
+    
     
 ## Defines a function to extract info from a single listing page
 def get_boat_info(listing_url):
@@ -118,9 +133,11 @@ def get_boat_info(listing_url):
     except:
         pass
 
+
     # Return the dictionary that contains the listing's information
     return(boat_attrs)
 
+    
 ## Define a function to run the program on a locality
 def scrape_locality(state, locality_dict):    
     for key, value in locality_dict.items():   
@@ -134,7 +151,7 @@ def scrape_locality(state, locality_dict):
         
         for endpoint in results_endpoints:
             start = time.time()
-            scrape_listings(endpoint, value)
+            results.extend(scrape_listings(endpoint, value))
             print(len(results))
             print (' results collected after scraping ' + endpoint + ' page.')
             end = time.time()
@@ -147,12 +164,13 @@ def scrape_locality(state, locality_dict):
         resultsDF = pd.DataFrame(results)
         output_file_title = state + '_' + key + '_results.csv'
         resultsDF.to_csv(output_file_title, encoding='utf-8')
+        
 
-## Define a function to run on a state
-test = {'WashingtonDC': {'washingtondc':'//washingtondc.craigslist.org/'}}
+## Run the program on a set of states!
 
-def scrape_state(state_list):
-    for key, value in state_list.items():
-        scrape_locality(key, value)
+# Hard-code the states to extract
+states_to_run = ['Territories']
+for state in states_to_run:
+    scrape_locality(state, sites[state])
 
-scrape_state(test)
+
