@@ -48,7 +48,7 @@ sites = dict(zip(state_list, locality_dicts_list))
 
 ## Defines a function which scrapes all listings pages
 def scrape_listings(page, locality_URL):
-    results_base= 'https:' + locality_URL + 'search/boo'
+    results_base = 'https:' + locality_URL + 'search/boo'
     r = requests.get(results_base + page)
     soup = BeautifulSoup(r.text, "lxml")
     
@@ -72,7 +72,7 @@ def get_listings_info(listing, locality_URL):
 
     # Test if the listing is of the correct locality-- a link with an incorrect locality will start with '/virginislands' instead of simply '/boa'
     if listing_link.startswith('/boa'):
-        locality_URL = locality_URL[0:-1] # Strips the extra '/' at end of locality_URL
+        locality_URL = locality_URL[0:-1]  # Strips the extra '/' at end of locality_URL
         listing_base = 'https:' + locality_URL
         listing_url = listing_base + listing_link
     
@@ -151,17 +151,17 @@ def scrape_locality(state, locality_dict):
         
         # Hardcode the possible listings page's endpoints
         results_endpoints = ['']
-        #'?s=100', '?s=200', '?s=300', '?s=400', '?s=500']
+        # '?s=100', '?s=200', '?s=300', '?s=400', '?s=500']
         
         for endpoint in results_endpoints:
             start = time.time()
             results.extend(scrape_listings(endpoint, value))
             print(len(results))
-            print (' results collected after scraping ' + endpoint + ' page.')
+            print(' results collected after scraping ' + endpoint + ' page.')
             end = time.time()
             
             # Time how long it takes to extract one page of results
-            print('Runtime for this page of results: ' + str(end-start) + ' seconds')
+            print('Runtime for this page of results: ' + str(end - start) + ' seconds')
             print('\n')
         
         # Convert results to pandas DataFrame and export as CSV with title constructed from state+locality+results
@@ -176,5 +176,3 @@ def scrape_locality(state, locality_dict):
 states_to_run = ['Washington', 'Virginia', 'Florida', 'Michigan', 'RhodeIsland', 'Maine']
 for state in states_to_run:
     scrape_locality(state, sites[state])
-
-
