@@ -5,9 +5,9 @@ Created on Sun Nov 20 16:08:16 2016
 @author: conway.yao
 """
 
-import requests 
-from bs4 import BeautifulSoup 
-import re  
+import requests
+from bs4 import BeautifulSoup
+import re
 import time
 import pandas as pd
 import os
@@ -16,43 +16,22 @@ import os
 os.listdir('./')
 os.chdir('csv')
 
-## Scrapes Craiglist for all localities (e.g. 'washingtondc')
-cl_sites_url = 'https://www.craigslist.org/about/sites'
-k = requests.get(cl_sites_url)
-ksoup = BeautifulSoup(k.text, 'lxml')
-
-# Find all states/countries and store into list
-state_list = []
-states = ksoup.find_all('h4')
-for raw_state in states:
-    state = re.sub('\W', '', raw_state.text)
-    state_list.append(state)
-
-# Find the lists of localities under each state/country
-localities = ksoup.find_all('ul')
-# Delete the Craigslist footer
-del(localities[140])
-
-# Create a dictionary where the keys are the locality names and the values are the URLs, and append to locality_dicts_list
-locality_dicts_list = []
-for ul in localities:
-    local = {}
-    for region in ul.find_all('a'):
-        local[re.sub('\W+', '_', region.text)] = region.attrs['href']
-    locality_dicts_list.append(local)
-
-# Combine state_list and locality_list together into one dictionary-of-dictionaries
-sites = {}
-sites = dict(zip(state_list, locality_dicts_list))
-
-
 ## Defines a function which scrapes all listings pages
-def scrape_listings(page, locality_URL):
-    results_base = 'https:' + locality_URL + 'search/boo'
-    r = requests.get(results_base + page)
-    soup = BeautifulSoup(r.text, "lxml")
+def scrape_listings(endpt, locality_URL):
+    
+    # Search for trailing locality identifiers (e.g. 'miami.craigslist.org/brw'), which have different listing page URLs
+    baseCLpattern = re.compile('.+org\/')
+    splitURL = baseCLpattern.split(locality_URL)
+    results_base = ''
+    if splitURL[1] == '':
+        results_base = 'https:' + locality_URL + 'search/boo'
+    elif splitURL[1] != '':
+        baseCL = re.search(baseCLpattern, locality_URL)
+        results_base = 'https:' + baseCL.group() + 'search/' + splitURL[1] + 'boo'
     
     # Extract the section that contains the information for each listing
+    r = requests.get(results_base + endpt)
+    soup = BeautifulSoup(r.text, "lxml")
     links = soup.find_all('p', class_='result-info')
     
     # Call get_listings_info to extract each listing's info
@@ -60,46 +39,44 @@ def scrape_listings(page, locality_URL):
     for listing in links:
         results.append(get_listings_info(listing, locality_URL))
     
-    # Return results, filtering out NoneTypes
-    return(filter(None, results))
-        
+    return(results)
 
+    
 ## Defines a function which extracts information from each listing on the listings page
 def get_listings_info(listing, locality_URL):
 
     # Extract listing_url to pass to get_boat_info function
     listing_link = listing.find(class_='result-title hdrlnk').attrs['href']
 
-    # Test if the listing is of the correct locality-- a link with an incorrect locality will start with '/virginislands' instead of simply '/boa'
-    if listing_link.startswith('/boa'):
-        locality_URL = locality_URL[0:-1]  # Strips the extra '/' at end of locality_URL
-        listing_base = 'https:' + locality_URL
-        listing_url = listing_base + listing_link
+    # If locality_URL has trailing locality (e.g. 'brw/'), strips that out
+    baseCLpattern = re.compile('.+org\/')
+    baseCL = re.search(baseCLpattern, locality_URL)
+    locality_URL_2 = baseCL.group()
     
-        # Pass listing_url to get_boat_info function, and get back a dictionary
-        boat_info = get_boat_info(listing_url)
+    locality_URL_3 = locality_URL_2[0:-1]  # Strips the extra '/' at end of locality_URL
+    listing_base = 'https:' + locality_URL_3
+    listing_url = listing_base + listing_link 
+      
+    # Pass listing_url to get_boat_info function, and get back a dictionary
+    boat_info = get_boat_info(listing_url)
+
+    # Populate dictionary with further information
+    boat_info['title'] = listing.find(class_='result-title hdrlnk').text
+    boat_info['id'] = listing.find(class_='result-title hdrlnk').attrs['data-id']
+    boat_info['url'] = listing_url
+    boat_info['date'] = listing.find(class_='result-date').attrs['datetime']
+    try:
+        boat_info['price'] = listing.find(class_ ='result-price').text
+        boat_info['region'] = listing.find(class_='result-hood').text
+    except:
+        pass
     
-        # Populate dictionary with further information
-        boat_info['title'] = listing.find(class_='result-title hdrlnk').text
-        boat_info['id'] = listing.find(class_='result-title hdrlnk').attrs['data-id']
-        boat_info['url'] = listing_url
-        boat_info['date'] = listing.find(class_='result-date').attrs['datetime']
-        try:
-            boat_info['price'] = listing.find(class_ ='result-price').text
-            boat_info['region'] = listing.find(class_='result-hood').text
-        except:
-            pass
-        
-        # Return dictionary of info about a boat
-        return(boat_info)
-    
-        # Sleep 'for' loop for 0.8 seconds to prevent IP blocking
-        time.sleep(0.8)
-        
-    # If the link is of the wrong locality, simply return NoneType
-    else:
-        return
-    
+    # Return dictionary of info about a boat
+    return(boat_info)
+
+    # Sleep 'for' loop for 0.8 seconds to prevent IP blocking
+    time.sleep(0.8)
+
     
 ## Defines a function to extract info from a single listing page
 def get_boat_info(listing_url):
@@ -111,20 +88,26 @@ def get_boat_info(listing_url):
     # Extract attributes and store into a dictionary
     boat_attrs= {}
     attrsoup = bsoup.find_all('p', class_='attrgroup')
-    for attribute in attrsoup[0].find_all('span'):
-        # Regex parsing to get just the attribute
-        m = re.search('[^:]*', attribute.contents[0])
-        # Add attribute into dictionary
-        boat_attrs[m.group(0)] = attribute.contents[1].text
+    try:
+        for attribute in attrsoup[0].find_all('span'):
+            # Regex parsing to get just the attribute
+            m = re.search('[^:]*', attribute.contents[0])
+            # Add attribute into dictionary
+            boat_attrs[m.group(0)] = attribute.contents[1].text
+    except:
+        pass
 
     # Extract description and join into one string
     description = []
-    for string in bsoup.find(id='postingbody').stripped_strings:
-        description.append(string)
-    description = (' '.join(description[1:]))
-
-    # Add description string into dictionary
-    boat_attrs['description'] = description
+    try:
+        for string in bsoup.find(id='postingbody').stripped_strings:
+            description.append(string)
+        description = (' '.join(description[1:]))
+    
+        # Add description string into dictionary
+        boat_attrs['description'] = description
+    except:
+        pass
 
     # Extract coordinates of posting
     try:
@@ -136,7 +119,6 @@ def get_boat_info(listing_url):
         boat_attrs['long'] = coords[1]
     except:
         pass
-
 
     # Return the dictionary that contains the listing's information
     return(boat_attrs)
@@ -157,7 +139,7 @@ def scrape_locality(state, locality_dict):
             start = time.time()
             results.extend(scrape_listings(endpoint, value))
             print(len(results))
-            print(' results collected after scraping ' + endpoint + ' page.')
+            print(' results collected after scraping ' + endpoint + ' page of ' + key)
             end = time.time()
             
             # Time how long it takes to extract one page of results
@@ -168,11 +150,3 @@ def scrape_locality(state, locality_dict):
         resultsDF = pd.DataFrame(results)
         output_file_title = state + '_' + key + '_results.csv'
         resultsDF.to_csv(output_file_title, encoding='utf-8')
-        
-
-## Run the program on a set of states!
-
-# Hard-code the states to extract
-states_to_run = ['Washington', 'Virginia', 'Florida', 'Michigan', 'RhodeIsland', 'Maine']
-for state in states_to_run:
-    scrape_locality(state, sites[state])
